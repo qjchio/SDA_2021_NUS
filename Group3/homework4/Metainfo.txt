@@ -7,8 +7,6 @@ Description: Clustering analysis for HSI component stocks
 
 Keywords: Clustering Analysis, HSI, stock  
 
-See also: 
-
 Author: Yingxin, Zhang
 
 Submitted:  18 MAR 2021
