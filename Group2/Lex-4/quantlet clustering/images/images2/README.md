@@ -1,1 +1,0 @@
-Images2 folder
