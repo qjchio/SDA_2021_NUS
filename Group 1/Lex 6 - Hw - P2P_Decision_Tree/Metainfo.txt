@@ -1,18 +1,13 @@
-Name of QuantLet:   Decision Tree - P2P
+Name of Quantlet: 'p2p_decision_tree'
 
-Published in:       ''
+Published in: 'SDA_2021_NUS'
 
-Description:        'DT model with entropy method on P2P data'
+Description: 'DT model with entropy method on P2P data'
 
-Keywords:
- - decision tree
- - entropy
- - p2p
- - graphviz
- - sklearn
+Keywords: 'Decision Tree, P2P, entropy, graphviz'
 
-Author:             Chen Chi
+Author: 'Chen Chi from Group 1'
 
-Submitted:          Sun, March 21 2021 by Chen Chi
+See also: 'LLE_p2p, LLE_p2p_classification'
 
-Output:             
+Submitted:  '21. Mar 2021, Chen Chi'
