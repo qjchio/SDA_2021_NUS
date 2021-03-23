@@ -1,13 +1,20 @@
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib
 import seaborn as sns
 import scipy.cluster.hierarchy as sch
 import numpy as np
 import logging
+import imageio
+import moviepy.editor as mp
+from datetime import datetime
+from datetime import timedelta
 from scipy.cluster.hierarchy import ClusterWarning
 from warnings import simplefilter
 simplefilter("ignore", ClusterWarning)
+import warnings
+warnings.filterwarnings("ignore",category=matplotlib.cbook.mplDeprecation)
 
 formatter = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logging.basicConfig(filename='cluster_analysis.log', filemode='w', level=logging.INFO, format=formatter)
@@ -16,7 +23,8 @@ sectors = ['basic_industries', 'capital_goods', 'consumer_durables', 'consumer_n
             'energy', 'finance', 'health_care','miscellaneous','public_utilities','technology','transportation']
 
 def symbol_to_path(symbol):
-    # todo: path to be changed 
+    # please download from below link:  
+    # https://drive.google.com/file/d/1Uy0VmrkbKUAskGKAAQo45F8unrphAF14/view?usp=sharing
     if os.path.exists('downloaded_data/data/'):
         return "downloaded_data/data/{}.csv".format(str(symbol))
     else:
@@ -207,12 +215,82 @@ def run(sym_file, category):
         cluster_plot(data, start_dates[i], end_dates[i], '{}/{}_corr_time_{}.png'.format(figure_path, category, i))
     logging.info('{}: plotted corr clustering for the time intervals'.format(category))
 
+def animate(sym_file, category, start, end, interval=30, window=360, cluster=True):
+    start_date = datetime.strptime(start, '%Y-%m-%d')
+    end_date = datetime.strptime(end, '%Y-%m-%d')
+    if not os.path.exists(sym_file):
+        logging.error('{} does not exist, please make sure the file path is valid!'.format(sym_file))
+        return 
+
+    symbols = get_symbols_from_file(sym_file)
+    data = get_data(symbols)
+    data.set_index('Date', inplace=True)
+    data.sort_index(inplace=True)
+    animation_path = 'animations/{}'.format(category)
+
+    if not (os.path.exists(animation_path) and os.path.isdir(animation_path)):
+        os.makedirs(animation_path)
+
+    logging.info('{}: plotting corr animation for window {} and interval {}, start: {}, end: {}'.format(category, window, interval, start, end))
+    images = []
+
+    i = 0
+    while start_date + timedelta(days=window) < end_date: 
+        s = start_date.strftime('%Y-%m-%d')
+        e = (start_date + timedelta(days=window)).strftime('%Y-%m-%d')
+        logging.info('Animation: plotting for period: {} to {}'.format(s, e))
+
+        data_tmp = data.loc[s:e, :]
+        corr = data_tmp.pct_change().corr()
+
+        plt.figure(figsize=(20,20))
+        if cluster:
+            dist = correlDist(corr)
+            dist_n = dist.fillna(0)
+            try:
+                link = sch.linkage(dist_n, 'single')
+                sortIx = getQuasiDiag(link)
+            except Exception as e:
+                logging.error('received error when trying to get sortIx: {}'.format(e))
+
+            sortIx = corr.index[sortIx].tolist()
+            df0 = corr.loc[sortIx, sortIx]
+
+            sns_plot=sns.heatmap(df0, vmin=-1, vmax=1, center=0, cmap=sns.diverging_palette(20, 220, n=200), square=True)
+            fig = sns_plot.get_figure()
+            ax = fig.add_subplot(111)
+            ax.set_title('Corr {} - {}'.format(s, e))
+            figname = os.path.join(animation_path, 'animate_{}.png'.format(i))
+            fig.savefig(figname)
+            images.append(imageio.imread(figname))
+            plt.close()
+
+        else:
+            sns.heatmap(corr, vmin=-1, vmax=1, center=0, cmap=sns.diverging_palette(20, 220, n=200), square=True)
+            fig = sns_plot.get_figure()
+            ax = fig.add_subplot(111)
+            ax.set_title('Corr {} - {}'.format(s, e))
+            figname = os.path.join(animation_path, 'animate_{}.png'.format(i))
+            fig.savefig(figname)
+            images.append(imageio.imread(figname))
+            plt.close()
+
+        start_date += timedelta(days=interval)
+        i += 1
+
+    imageio.mimsave(os.path.join(animation_path,'{}.gif'.format(category)), images, fps=2)
+    clip = mp.VideoFileClip(os.path.join(animation_path,'{}.gif'.format(category)))
+    clip.write_videofile(os.path.join(animation_path,'{}.mp4'.format(category)))
+    logging.info('{}: corr animation saved at {}'.format(category, animation_path))
+
+
 def main():
     # run('sp500_symbol.csv', 'SP500')
     logging.info('Starting the process...')
 
     logging.info('{}: process for {} symbols'.format('SP500', 'SP500'))
     run('sectors/sp500_symbol.csv', 'SP500')
+    animate('sectors/sp500_symbol.csv', 'SP500', '2011-03-15', '2021-03-15', 90)
 
     for s in sectors:
         logging.info('{}: process for {} symbols'.format(s, s))

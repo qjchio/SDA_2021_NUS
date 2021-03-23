@@ -10,8 +10,8 @@ def run(symbol, initial, final):
     abc = downloader(symbol,start,end)
     abc = abc.decode('utf-8')
 
-    with open('{}.csv'.format(symbol), "w") as salida:
-        salida.writelines(str(abc))
+    with open('{}.csv'.format(symbol), "w") as f:
+        f.writelines(str(abc))
 
 
 def downloader(symbol, start, end):
